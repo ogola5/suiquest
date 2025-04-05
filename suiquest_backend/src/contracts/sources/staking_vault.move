@@ -1,4 +1,4 @@
-#[allow(duplicate_alias,unused_use,unused_const)]
+#[allow(duplicate_alias,unused_use,unused_const,unused_field)]
 
 module 0x0::StakingVault {
     use sui::object::{Self, UID, ID};
@@ -17,6 +17,10 @@ module 0x0::StakingVault {
         max_capacity: u64,
         reward_rate: u64,
         is_paused: bool,
+    }
+    public struct VaultManager has key {
+        id: UID,
+        owner: address,
     }
 
     public struct StakedNFT has key, store {
@@ -49,6 +53,7 @@ module 0x0::StakingVault {
     const EALREADY_STAKED: u64 = 3;
     const E_VAULT_FULL: u64 = 4;
     const E_VAULT_PAUSED: u64 = 5;
+    const EARLY_UNSTAKE_PENALTY: u64 = 20;
 
     public entry fun create_vault(ctx: &mut TxContext) {
         let vault = Vault {
@@ -116,7 +121,7 @@ module 0x0::StakingVault {
     public entry fun unstake_nft(staked_nft: StakedNFT, vault: &mut Vault, ctx: &mut TxContext) {
         let sender = tx_context::sender(ctx);
         assert!(staked_nft.owner == sender, ENOT_OWNER);
-
+        
         let mut i = 0;
         let len = vector::length(&vault.staked_nfts);
         let mut found = false;

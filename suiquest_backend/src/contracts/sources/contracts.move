@@ -142,6 +142,34 @@ module 0x0::DynamicNFT {
             owner,
         });
     }
+    public fun mint(owner: address, name: String, ctx: &mut TxContext): NFT {
+        let nft = NFT {
+            id: object::new(ctx),
+            owner,
+            level: 1,
+            name,
+            soulbound: false,
+            locked_for_bridge: false,
+            metadata: vec_map::empty(),
+        };
+        
+        event::emit(NFTCreated {
+            nft_id: object::uid_to_inner(&nft.id),
+            owner,
+            name: copy name,
+        });
+
+        nft
+    }
+    // public fun get_rarity(nft: &NFT): u64 {
+    //     match nft.level {
+    //         1 => 1,   // Common
+    //         2 => 5,   // Rare
+    //         3 => 10,  // Epic
+    //         4 => 20,  // Legendary
+    //         _ => 2,   // Default multiplier for others
+    //     }
+    // }
 
     public entry fun set_nft_metadata(nft: &mut NFT, key: String, value: String, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == nft.owner, ENOT_OWNER);
@@ -155,7 +183,15 @@ module 0x0::DynamicNFT {
             value,
         });
     }
-
+    // Inside 0x0::DynamicNFT module
+    
+    public fun get_id_inner(nft: &NFT): ID {
+        object::uid_to_inner(&nft.id)
+    }
+    // Also add getters for any other fields needed externally (like owner)
+    // public fun get_owner(nft: &NFT): address {
+    //     nft.owner
+    // }
     public fun get_nft_metadata(nft: &NFT): (u8, String, bool, bool, &VecMap<String, String>) {
         (nft.level, nft.name, nft.soulbound, nft.locked_for_bridge, &nft.metadata)
     }
@@ -208,6 +244,42 @@ module 0x0::DynamicNFT {
             owner: nft.owner,
         });
     }
+    // public fun get_rarity(nft: &NFT): u64 {
+    //     let level = nft.level;
+    //     if (level == 1) {
+    //         1
+    //     } else if (level == 2) {
+    //         5
+    //     } else if (level == 3) {
+    //         10
+    //     } else if (level == 4) {
+    //         20
+    //     } else {
+    //         2
+    //     }
+    // }
+    public fun mint_for_reinvest(name: String, level: u8, ctx: &mut TxContext): NFT {
+        let owner = tx_context::sender(ctx);
+
+        let nft = NFT {
+            id: object::new(ctx),
+            owner,
+            level,
+            name,
+            soulbound: false,
+            locked_for_bridge: false,
+            metadata: vec_map::empty(),
+        };
+
+        event::emit(NFTCreated {
+            nft_id: object::uid_to_inner(&nft.id),
+            owner,
+            name,
+        });
+
+        nft
+    }
+
 
     public entry fun unlock_nft_from_bridge(nft: &mut NFT, ctx: &mut TxContext) {
         assert!(tx_context::sender(ctx) == nft.owner, ENOT_OWNER);
